@@ -1,4 +1,11 @@
-#!/bin/sh
-echo "Running basic test..."
-test -f app/index.html
-echo "HTML file exists. Test passed!"
+#!/bin/bash
+ 
+echo "Running simple test..."
+ 
+if [ -f app/index.html ]; then
+    echo "index.html exists ✅"
+    exit 0
+else
+    echo "index.html missing ❌"
+    exit 1
+fi
