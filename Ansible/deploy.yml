@@ -1,0 +1,11 @@
+- hosts: all
+  become: yes
+  tasks:
+    - name: Pull latest Docker image
+      shell: docker pull my-app:latest
+ 
+    - name: Stop old container
+      shell: docker rm -f my-app || true
+ 
+    - name: Run new container
+      shell: docker run -d --name my-app -p 80:80 my-app:latest
