@@ -1,9 +1,0 @@
-- hosts: all
-  become: yes
-  tasks:
- 
-    - name: Stop old container
-      shell: docker rm -f myapp || true
- 
-    - name: Run new nginx container
-      shell: docker run -d --name myapp -p 80:80 my-app:latest
