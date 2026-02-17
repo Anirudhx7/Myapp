@@ -1,6 +1,6 @@
 pipeline {
  
-    agent { label 'remote' }   // must match your agent label
+    agent { label 'remote' }
  
     environment {
         IMAGE_NAME = "my-app"
@@ -16,40 +16,23 @@ pipeline {
  
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:${env.BRANCH_NAME} ."
+                sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
  
         stage('Run Tests') {
             steps {
-                sh "echo Running tests..."
-                sh "chmod +x tests/test.sh"
-                sh "./tests/test.sh"
-            }
-        }
- 
-        stage('Deploy to Dev') {
-            when {
-                branch 'dev'
-            }
-            steps {
-                sh """
-                docker tag ${IMAGE_NAME}:${env.BRANCH_NAME} ${IMAGE_NAME}:latest
-                ansible-playbook -i ansible/inventory ansible/deploy.yml --limit dev
-                """
+                sh "chmod +x test/test.sh"
+                sh "./test/test.sh"
             }
         }
  
         stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
             steps {
                 input message: 'Approve Production Deployment?'
  
                 sh """
-                docker tag ${IMAGE_NAME}:${env.BRANCH_NAME} ${IMAGE_NAME}:latest
-                ansible-playbook -i ansible/inventory ansible/deploy.yml --limit prod
+                ansible-playbook -i ansible/inventory ansible/deploy.yml
                 """
             }
         }
@@ -60,7 +43,7 @@ pipeline {
             echo "Build failed!"
         }
         success {
-            echo "Pipeline completed successfully!"
+            echo "Deployment completed!"
         }
     }
 }
