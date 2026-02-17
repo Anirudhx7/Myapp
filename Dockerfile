@@ -1,6 +1,5 @@
-FROM alpine:latest
+FROM nginx:alpine
  
-WORKDIR /app
-COPY app/ /app/
+COPY app/ /usr/share/nginx/html/
  
-CMD ["sh", "-c", "echo App running && sleep 300"]
+EXPOSE 80
