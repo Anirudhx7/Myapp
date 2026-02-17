@@ -32,7 +32,7 @@ pipeline {
                 input message: 'Approve Production Deployment?'
  
                 sh """
-                ansible-playbook -i ansible/inventory ansible/deploy.yml
+                ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
                 """
             }
         }
