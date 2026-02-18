@@ -15,7 +15,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "Checking out source code..."
+                echo "Checking out source..."
                 checkout scm
                 sh "git log -1 --oneline"
             }
@@ -23,8 +23,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image version ${IMAGE_TAG}..."
-
+                echo "Building image ${IMAGE_NAME}:${IMAGE_TAG}"
                 sh """
                 docker build --no-cache -t ${IMAGE_NAME}:${IMAGE_TAG} .
                 docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
@@ -32,21 +31,12 @@ pipeline {
             }
         }
 
-        stage('Remove Old Container') {
+        stage('Deploy Container') {
             steps {
-                echo "Removing old container if exists..."
-                sh "docker rm -f myapp || true"
-            }
-        }
-
-        stage('Deploy New Container') {
-            when {
-                branch 'main'
-            }
-            steps {
-                echo "Starting new container..."
+                echo "Deploying container..."
 
                 sh """
+                docker rm -f myapp || true
                 docker run -d \
                   --name myapp \
                   -p 80:80 \
@@ -55,9 +45,8 @@ pipeline {
             }
         }
 
-        stage('Cleanup Old Images') {
+        stage('Cleanup') {
             steps {
-                echo "Cleaning unused images..."
                 sh "docker image prune -f"
             }
         }
@@ -65,7 +54,7 @@ pipeline {
 
     post {
         success {
-            echo "Build #${BUILD_NUMBER} deployed successfully 🚀"
+            echo "Build ${BUILD_NUMBER} deployed successfully 🚀"
             sh "docker ps"
         }
         failure {
