@@ -5,7 +5,6 @@ pipeline {
     environment {
         IMAGE_NAME = "my-app"
         IMAGE_TAG  = "${BUILD_NUMBER}"
-        DOCKERHUB_REPO = "yourdockerhubusername/my-app"
     }
  
     stages {
@@ -25,31 +24,6 @@ pipeline {
             }
         }
  
-        stage('Login to DockerHub') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh """
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    """
-                }
-            }
-        }
- 
-        stage('Push Image to DockerHub') {
-            steps {
-                sh """
-                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_REPO}:${IMAGE_TAG}
-                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_REPO}:latest
-                docker push ${DOCKERHUB_REPO}:${IMAGE_TAG}
-                docker push ${DOCKERHUB_REPO}:latest
-                """
-            }
-        }
- 
         stage('Deploy to Production') {
             when {
                 branch 'main'
@@ -57,7 +31,7 @@ pipeline {
             steps {
                 sh """
                 ansible-playbook -i ansible/inventory ansible/deploy.yml \
-                -e image=${DOCKERHUB_REPO}:${IMAGE_TAG}
+                -e image=${IMAGE_NAME}:${IMAGE_TAG}
                 """
             }
         }
@@ -65,7 +39,7 @@ pipeline {
  
     post {
         success {
-            echo "Deployment successful 🚀"
+            echo "Build #${BUILD_NUMBER} deployed successfully 🚀"
         }
         failure {
             echo "Build failed ❌"
