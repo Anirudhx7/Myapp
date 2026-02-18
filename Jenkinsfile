@@ -4,6 +4,8 @@ pipeline {
  
     environment {
         IMAGE_NAME = "my-app"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+        DOCKERHUB_REPO = "yourdockerhubusername/my-app"
     }
  
     stages {
@@ -16,34 +18,57 @@ pipeline {
  
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:latest ."
+                sh """
+                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                """
             }
         }
  
-        stage('Run Tests') {
+        stage('Login to DockerHub') {
             steps {
-                sh "chmod +x test/test.sh"
-                sh "./test/test.sh"
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    """
+                }
+            }
+        }
+ 
+        stage('Push Image to DockerHub') {
+            steps {
+                sh """
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_REPO}:${IMAGE_TAG}
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_REPO}:latest
+                docker push ${DOCKERHUB_REPO}:${IMAGE_TAG}
+                docker push ${DOCKERHUB_REPO}:latest
+                """
             }
         }
  
         stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
             steps {
-                input message: 'Approve Production Deployment?'
- 
                 sh """
-                ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
+                ansible-playbook -i ansible/inventory ansible/deploy.yml \
+                -e image=${DOCKERHUB_REPO}:${IMAGE_TAG}
                 """
             }
         }
     }
  
     post {
-        failure {
-            echo "Build failed!"
-        }
         success {
-            echo "Deployment completed!"
+            echo "Deployment successful 🚀"
+        }
+        failure {
+            echo "Build failed ❌"
         }
     }
 }
