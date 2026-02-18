@@ -1,9 +1,13 @@
 - hosts: localhost
   become: yes
+ 
   tasks:
+ 
+    - name: Pull latest image
+      shell: docker pull {{ image }}
  
     - name: Stop old container
       shell: docker rm -f myapp || true
  
-    - name: Run new nginx container
-      shell: docker run -d --name myapp -p 80:80 my-app:latest
+    - name: Run new container
+      shell: docker run -d --name myapp -p 80:80 {{ image }}
